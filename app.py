@@ -36,22 +36,30 @@ with st.form("memo_form"):
     content = st.text_input("내용을 입력하세요")
     submit = st.form_submit_button("저장하기")
 
-    if submit and content:
+   if submit and content:
+        # 전송할 데이터 준비
         payload = {
             ENTRIES["date"]: datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
             ENTRIES["user"]: user,
             ENTRIES["cat"]: category,
             ENTRIES["text"]: content
         }
+        
         try:
-            response = requests.post(FORM_URL, data=payload)
+            # 주소 끝이 /formResponse인지 다시 확인하세요!
+            response = requests.post(FORM_URL, data=payload, timeout=10)
+            
             if response.status_code == 200:
                 st.success("✅ 저장 성공!")
                 st.rerun()
             else:
-                st.error("전송 실패")
-        except:
-            st.error("연결 오류")
+                st.error(f"❌ 전송 실패 (상태 코드: {response.status_code})")
+                st.write("설문지 주소나 질문 번호(entry ID)를 확인해 주세요.")
+                
+        except Exception as e:
+            # 상세 에러 메시지 출력
+            st.error(f"❌ 실제 연결 에러 내용: {e}")
+            st.write("인터넷 연결이나 라이브러리 설치 상태를 확인하세요.")
 
 # 5. 메모 목록 표시 (열 이름 에러 방지)
 st.write("---")
@@ -76,3 +84,4 @@ if not df.empty:
         st.error(f"목록 표시 오류: 시트의 열 개수가 부족합니다.")
 else:
     st.write("표시할 메모가 없습니다. 첫 메모를 남겨보세요!")
+
