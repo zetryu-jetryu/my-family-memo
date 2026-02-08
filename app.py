@@ -51,7 +51,12 @@ with st.expander("📝 새 메모 남기기", expanded=True):
                 st.rerun()
             except Exception as e:
                 st.error(f"저장 중 오류가 발생했습니다: {e}")
-
+ENTRIES = {
+    "date": "entry.1000001",  # 날짜 질문에서 찾은 번호
+    "user": "entry.2000002",  # 작성자 질문에서 찾은 번호
+    "cat": "entry.3000003",   # 카테고리 질문에서 찾은 번호
+    "text": "entry.4000004"   # 내용 질문에서 찾은 번호
+}
 # 메모 리스트 출력
 st.divider()
 try:
@@ -60,7 +65,8 @@ try:
         # 최신순 정렬 및 빈 줄 방지
         for i, row in display_df.iloc[::-1].iterrows():
             if pd.notna(row['내용']) and str(row['내용']).strip() != "":
-                st.info(f"**[{row['entry.1933165763']}] {row['entry.1127160445']}** \n({row['entry.2016517978']} | {row['entry.1748127579']})")
+                st.info(f"**[{row['entry.1933165763']}] {row['내용']}** \n({row['entry.2016517978']} | {row['entry.1748127579']})")
 except:
     st.write("아직 등록된 메모가 없습니다.")
+
 
