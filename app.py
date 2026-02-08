@@ -13,7 +13,7 @@ st.title("👨‍👩‍👧‍👦 우리 가족 공동 메모장")
 SHEET_ID = "여기다가_복사한_ID만_넣으세요" 
 
 # 한글 에러를 방지하기 위해 URL을 자동으로 생성하도록 만듭니다.
-URL = f"https://docs.google.com/spreadsheets/d/{1MbL6-1fMZTBDdn_9CfyJkjrJsoqrYMEPquMWO7Cos8o/edit?gid=0#gid=0}/gviz/tq?tqx=out:csv"
+URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 # ----------------------------------
 
 conn = st.connection("gsheets", type=GSheetsConnection)
@@ -57,3 +57,4 @@ try:
                 st.info(f"**[{row['카테고리']}] {row['내용']}** \n({row['작성자']} | {row['날짜']})")
 except:
     st.write("아직 메모가 없거나 연결 대기 중입니다.")
+
