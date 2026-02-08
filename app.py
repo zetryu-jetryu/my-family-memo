@@ -26,7 +26,7 @@ def load_data():
 # 입력 섹션
 with st.expander("📝 새 메모 남기기", expanded=True):
     user = st.selectbox("누구신가요?", ["아빠", "엄마", "지빈", "도빈"])
-    category = st.selectbox("카테고리", ["🛒 장보기", "📅 일정", "💡 아이디어", "💬 기타"])
+    category = st.selectbox("카테고리", ["📅 일정", "🛒 장보기", "💡 아이디어", "💬 기타"])
     content = st.text_input("내용을 입력하세요")
 
     if st.button("저장하기"):
@@ -57,6 +57,7 @@ try:
                 st.info(f"**[{row['카테고리']}] {row['내용']}** \n({row['작성자']} | {row['날짜']})")
 except:
     st.write("아직 메모가 없거나 연결 대기 중입니다.")
+
 
 
 
