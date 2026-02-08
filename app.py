@@ -2,25 +2,23 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 import datetime
+import urllib.parse
 
 # 앱 설정
 st.set_page_config(page_title="우리 가족 메모장", page_icon="🏠")
 st.title("👨‍👩‍👧‍👦 우리 가족 공동 메모장")
 
-# --- 이 부분을 주의해서 수정하세요 ---
-# 구글 시트 주소에서 'ID'만 따옴표 안에 넣으세요.
-# 예: https://docs.google.com/spreadsheets/d/1abc123... 에서 1abc123 부분이 ID입니다.
-SHEET_ID = "여기다가_복사한_ID만_넣으세요" 
-
-# 한글 에러를 방지하기 위해 URL을 자동으로 생성하도록 만듭니다.
-URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
-# ----------------------------------
+# --- 설정 구간 ---
+SHEET_ID = "1MbL6-1fMZTBDdn_9CfyJkjrJsoqrYMEPquMWO7Cos8o" 
+# 한글 인코딩 문제를 피하기 위해 주소를 안전하게 변환합니다.
+base_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
+URL = urllib.parse.quote(base_url, safe=':/?&=')
+# ----------------
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# 데이터 불러오기 함수
 def load_data():
-    # 주소에 한글이 섞여 있을 경우를 대비해 인코딩 설정을 추가합니다.
+    # 데이터를 읽어올 때 캐시를 무효화하여 실시간성을 높입니다.
     return conn.read(spreadsheet=URL, ttl=0)
 
 # 입력 섹션
@@ -32,24 +30,36 @@ with st.expander("📝 새 메모 남기기", expanded=True):
     if st.button("저장하기"):
         if content:
             try:
-                existing_data = load_data()
-                new_data = pd.DataFrame([{
+                # 1. 기존 데이터 로드
+                df = load_data()
+                
+                # 2. 새 데이터 생성
+                new_row = pd.DataFrame([{
                     "날짜": datetime.datetime.now().strftime("%m/%d %H:%M"),
                     "작성자": user,
                     "카테고리": category,
                     "내용": content
                 }])
-                # 데이터 합치기 전 비어있는 행 제거
-                updated_df = pd.concat([existing_data, new_data], ignore_index=True).dropna(how='all')
                 
-                # 저장 시도
+                # 3. 데이터 합치기
+                updated_df = pd.concat([df, new_row], ignore_index=True)
+                
+                # 4. 저장 (한글 포함 데이터 안전하게 전송)
                 conn.update(spreadsheet=URL, data=updated_df)
+                
                 st.success("성공적으로 저장되었습니다!")
                 st.rerun()
             except Exception as e:
-                # 어떤 에러인지 화면에 구체적으로 표시합니다.
-                st.error(f"오류 상세 내용: {e}")
+                st.error(f"저장 중 오류가 발생했습니다: {e}")
 
-
-
-
+# 메모 리스트 출력
+st.divider()
+try:
+    display_df = load_data()
+    if not display_df.empty:
+        # 최신순 정렬 및 빈 줄 방지
+        for i, row in display_df.iloc[::-1].iterrows():
+            if pd.notna(row['내용']) and str(row['내용']).strip() != "":
+                st.info(f"**[{row['카테고리']}] {row['내용']}** \n({row['작성자']} | {row['날짜']})")
+except:
+    st.write("아직 등록된 메모가 없습니다.")
