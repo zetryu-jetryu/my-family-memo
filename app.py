@@ -69,3 +69,4 @@ if not df.empty:
 else:
     st.write("아직 등록된 메모가 없습니다.")
 
+
