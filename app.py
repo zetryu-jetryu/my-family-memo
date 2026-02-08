@@ -51,11 +51,15 @@ with st.expander("📝 새 메모 남기기", expanded=True):
                 st.rerun()
             except Exception as e:
                 st.error(f"저장 중 오류가 발생했습니다: {e}")
+# 1. 구글 설문지 제출 주소 (끝부분이 /formResponse인지 확인하세요)
+FORM_URL = "https://docs.google.com/forms/d/1lUs7h2cj-LGv-0RZjPWrsCLMJmt2CTzh9kvyzV8nlV0/formResponse"
+
+# 2. 설문지 항목별 고유 번호 (entry ID)
 ENTRIES = {
-    "date": "entry.1000001",  # 날짜 질문에서 찾은 번호
-    "user": "entry.2000002",  # 작성자 질문에서 찾은 번호
-    "cat": "entry.3000003",   # 카테고리 질문에서 찾은 번호
-    "text": "entry.4000004"   # 내용 질문에서 찾은 번호
+    "date": "entry.1691386708",  # 날짜 항목
+    "user": "entry.1460592934",  # 작성자 항목
+    "cat": "entry.348705031",   # 카테고리 항목
+    "text": "entry.1509172605"   # 내용 항목
 }
 # 메모 리스트 출력
 st.divider()
@@ -68,5 +72,6 @@ try:
                 st.info(f"**[{row['entry.1933165763']}] {row['내용']}** \n({row['entry.2016517978']} | {row['entry.1748127579']})")
 except:
     st.write("아직 등록된 메모가 없습니다.")
+
 
 
