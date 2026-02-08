@@ -16,7 +16,7 @@ st.set_page_config(page_title="우리 가족 메모장", layout="centered")
 st.title("🏠 우리 가족 공동 메모장")
 
 # 입력 섹션
-user = st.selectbox("누구신가요?", ["아빠", "엄마", "첫째", "둘째"])
+user = st.selectbox("누구신가요?", ["아빠", "엄마", "지빈", "도빈"])
 category = st.selectbox("카테고리", ["🛒 장보기", "📅 일정", "💡 아이디어", "💬 기타"])
 content = st.text_input("내용을 입력하세요")
 
@@ -40,3 +40,4 @@ df = load_data()
 if not df.empty:
     for i, row in df.iloc[::-1].iterrows():
         st.info(f"**[{row['카테고리']}] {row['내용']}** \n({row['작성자']} | {row['날짜']})")
+
