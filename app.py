@@ -4,50 +4,56 @@ import pandas as pd
 import datetime
 
 # 앱 설정
-st.set_page_config(page_title="우리 가족 메모장", layout="centered")
-st.title("🏠 우리 가족 공동 메모장")
+st.set_page_config(page_title="우리 가족 메모장", icon="🏠")
+st.title("👨‍👩‍👧‍👦 우리 가족 공동 메모장")
 
-# 구글 시트 연결 설정 (공개된 시트 주소 입력)
-# 본인의 구글 시트 주소를 아래 따옴표 안에 넣어주세요.
-URL = "https://docs.google.com/spreadsheets/d/본인의_시트_ID_입력/edit?usp=sharing"
+# --- 이 부분을 주의해서 수정하세요 ---
+# 구글 시트 주소에서 'ID'만 따옴표 안에 넣으세요.
+# 예: https://docs.google.com/spreadsheets/d/1abc123... 에서 1abc123 부분이 ID입니다.
+SHEET_ID = "여기다가_복사한_ID만_넣으세요" 
+
+# 한글 에러를 방지하기 위해 URL을 자동으로 생성하도록 만듭니다.
+URL = f"https://docs.google.com/spreadsheets/d/{1MbL6-1fMZTBDdn_9CfyJkjrJsoqrYMEPquMWO7Cos8o/edit?gid=0#gid=0}/gviz/tq?tqx=out:csv"
+# ----------------------------------
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # 데이터 불러오기 함수
 def load_data():
-    return conn.read(spreadsheet=URL, usecols=[0,1,2,3])
+    # 주소에 한글이 섞여 있을 경우를 대비해 인코딩 설정을 추가합니다.
+    return conn.read(spreadsheet=URL, ttl=0)
 
 # 입력 섹션
-with st.container():
+with st.expander("📝 새 메모 남기기", expanded=True):
     user = st.selectbox("누구신가요?", ["아빠", "엄마", "지빈", "도빈"])
     category = st.selectbox("카테고리", ["🛒 장보기", "📅 일정", "💡 아이디어", "💬 기타"])
     content = st.text_input("내용을 입력하세요")
 
-    if st.button("메모 추가"):
+    if st.button("저장하기"):
         if content:
-            # 기존 데이터 가져오기
-            existing_data = load_data()
-            # 새 데이터 만들기
-            new_data = pd.DataFrame([{
-                "날짜": datetime.datetime.now().strftime("%m/%d %H:%M"),
-                "작성자": user,
-                "카테고리": category,
-                "내용": content
-            }])
-            # 합치기
-            updated_df = pd.concat([existing_data, new_data], ignore_index=True)
-            # 시트에 저장 (이 기능은 시트 공유가 '편집자'로 되어 있어야 함)
-            conn.update(spreadsheet=URL, data=updated_df)
-            st.success("메모가 시트에 저장되었습니다!")
-            st.rerun()
+            try:
+                existing_data = load_data()
+                new_data = pd.DataFrame([{
+                    "날짜": datetime.datetime.now().strftime("%m/%d %H:%M"),
+                    "작성자": user,
+                    "카테고리": category,
+                    "내용": content
+                }])
+                updated_df = pd.concat([existing_data, new_data], ignore_index=True)
+                conn.update(spreadsheet=URL, data=updated_df)
+                st.success("성공적으로 저장되었습니다!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"저장 중 오류가 발생했어요. 시트 권한을 확인해 주세요.")
 
 # 메모 리스트 출력
 st.divider()
 try:
     df = load_data()
     if not df.empty:
-        for i, row in df.iloc[::-1].iterrows(): # 최신순
+        # 최신 메모 20개만 보여주기
+        for i, row in df.iloc[::-1].head(20).iterrows():
             if pd.notna(row['내용']):
                 st.info(f"**[{row['카테고리']}] {row['내용']}** \n({row['작성자']} | {row['날짜']})")
 except:
-    st.write("아직 등록된 메모가 없거나 시트 연결 확인이 필요합니다.")
+    st.write("아직 메모가 없거나 연결 대기 중입니다.")
