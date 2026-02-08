@@ -1,27 +1,39 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 import datetime
-import urllib.parse
+import requests
 
 # 앱 설정
 st.set_page_config(page_title="우리 가족 메모장", page_icon="🏠")
 st.title("👨‍👩‍👧‍👦 우리 가족 공동 메모장")
 
-# --- 설정 구간 ---
-SHEET_ID = "1MbL6-1fMZTBDdn_9CfyJkjrJsoqrYMEPquMWO7Cos8o" 
-# 한글 인코딩 문제를 피하기 위해 주소를 안전하게 변환합니다.
-base_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
-URL = urllib.parse.quote(base_url, safe=':/?&=')
-# ----------------
+# --- [설정 구간] ---
+# 1. 읽기용: 구글 시트 CSV 주소 (본인 시트 ID 확인)
+SHEET_ID = "1MbL6-1fMZTBDdn_9CfyJkjrJsoqrYMEPquMWO7Cos8o"
+READ_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
-conn = st.connection("gsheets", type=GSheetsConnection)
+# 2. 쓰기용: 구글 설문지 제출 주소 (알려주신 주소 기반)
+FORM_URL = "https://docs.google.com/forms/d/1lUs7h2cj-LGv-0RZjPWrsCLMJmt2CTzh9kvyzV8nlV0/formResponse"
 
+# 3. 항목별 ID (제가 찾아드린 번호입니다)
+ENTRIES = {
+    "date": "entry.1691386708",
+    "user": "entry.1460592934",
+    "cat": "entry.348705031",
+    "text": "entry.1509172605"
+}
+# ------------------
+
+# 데이터 로드 함수 (시트에서 읽어오기만 함)
 def load_data():
-    # 데이터를 읽어올 때 캐시를 무효화하여 실시간성을 높입니다.
-    return conn.read(spreadsheet=URL, ttl=0)
+    try:
+        # 캐시 방지를 위해 시간값을 파라미터로 추가
+        url = f"{READ_URL}&cache={datetime.datetime.now().timestamp()}"
+        return pd.read_csv(url)
+    except:
+        return pd.DataFrame(columns=["날짜", "작성자", "카테고리", "내용"])
 
-# 입력 섹션
+# 입력 화면
 with st.expander("📝 새 메모 남기기", expanded=True):
     user = st.selectbox("누구신가요?", ["아빠", "엄마", "지빈", "도빈"])
     category = st.selectbox("카테고리", ["📅 일정", "🛒 장보기", "💡 아이디어", "💬 기타"])
@@ -29,49 +41,30 @@ with st.expander("📝 새 메모 남기기", expanded=True):
 
     if st.button("저장하기"):
         if content:
+            # 설문지로 데이터 전송 (이게 '쓰기' 역할을 대신합니다)
+            payload = {
+                ENTRIES["date"]: datetime.datetime.now().strftime("%m/%d %H:%M"),
+                ENTRIES["user"]: user,
+                ENTRIES["cat"]: category,
+                ENTRIES["text"]: content
+            }
             try:
-                # 1. 기존 데이터 로드
-                df = load_data()
-                
-                # 2. 새 데이터 생성
-                new_row = pd.DataFrame([{
-                    "날짜": datetime.datetime.now().strftime("%m/%d %H:%M"),
-                    "작성자": user,
-                    "카테고리": category,
-                    "내용": content
-                }])
-                
-                # 3. 데이터 합치기
-                updated_df = pd.concat([df, new_row], ignore_index=True)
-                
-                # 4. 저장 (한글 포함 데이터 안전하게 전송)
-                conn.update(spreadsheet=URL, data=updated_df)
-                
-                st.success("성공적으로 저장되었습니다!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"저장 중 오류가 발생했습니다: {e}")
-# 1. 구글 설문지 제출 주소 (끝부분이 /formResponse인지 확인하세요)
-FORM_URL = "https://docs.google.com/forms/d/1lUs7h2cj-LGv-0RZjPWrsCLMJmt2CTzh9kvyzV8nlV0/formResponse"
+                response = requests.post(FORM_URL, data=payload)
+                if response.status_code == 200:
+                    st.success("성공적으로 전송되었습니다!")
+                    st.rerun()
+                else:
+                    st.error("전송에 실패했습니다. 설문지 설정을 확인하세요.")
+            except:
+                st.error("연결 오류가 발생했습니다.")
 
-# 2. 설문지 항목별 고유 번호 (entry ID)
-ENTRIES = {
-    "date": "entry.1691386708",  # 날짜 항목
-    "user": "entry.1460592934",  # 작성자 항목
-    "cat": "entry.348705031",   # 카테고리 항목
-    "text": "entry.1509172605"   # 내용 항목
-}
 # 메모 리스트 출력
 st.divider()
-try:
-    display_df = load_data()
-    if not display_df.empty:
-        # 최신순 정렬 및 빈 줄 방지
-        for i, row in display_df.iloc[::-1].iterrows():
-            if pd.notna(row['내용']) and str(row['내용']).strip() != "":
-                st.info(f"**[{row['entry.1933165763']}] {row['내용']}** \n({row['entry.2016517978']} | {row['entry.1748127579']})")
-except:
-    st.write("아직 등록된 메모가 없습니다.")
-
-
-
+df = load_data()
+if not df.empty:
+    # 최신순으로 20개만 표시 (내용이 있는 것만)
+    display_df = df.dropna(subset=['내용'])
+    for i, row in display_df.iloc[::-1].head(20).iterrows():
+        st.info(f"**[{row['카테고리']}] {row['내용']}** \n({row['작성자']} | {row['날짜']})")
+else:
+    st.write("아직 등록된 메모가 없거나 불러오는 중입니다.")
