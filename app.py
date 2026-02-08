@@ -39,24 +39,16 @@ with st.expander("📝 새 메모 남기기", expanded=True):
                     "카테고리": category,
                     "내용": content
                 }])
-                updated_df = pd.concat([existing_data, new_data], ignore_index=True)
+                # 데이터 합치기 전 비어있는 행 제거
+                updated_df = pd.concat([existing_data, new_data], ignore_index=True).dropna(how='all')
+                
+                # 저장 시도
                 conn.update(spreadsheet=URL, data=updated_df)
                 st.success("성공적으로 저장되었습니다!")
                 st.rerun()
             except Exception as e:
-                st.error(f"저장 중 오류가 발생했어요. 시트 권한을 확인해 주세요.")
-
-# 메모 리스트 출력
-st.divider()
-try:
-    df = load_data()
-    if not df.empty:
-        # 최신 메모 20개만 보여주기
-        for i, row in df.iloc[::-1].head(20).iterrows():
-            if pd.notna(row['내용']):
-                st.info(f"**[{row['카테고리']}] {row['내용']}** \n({row['작성자']} | {row['날짜']})")
-except:
-    st.write("아직 메모가 없거나 연결 대기 중입니다.")
+                # 어떤 에러인지 화면에 구체적으로 표시합니다.
+                st.error(f"오류 상세 내용: {e}")
 
 
 
