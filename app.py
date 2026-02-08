@@ -60,6 +60,7 @@ try:
         # 최신순 정렬 및 빈 줄 방지
         for i, row in display_df.iloc[::-1].iterrows():
             if pd.notna(row['내용']) and str(row['내용']).strip() != "":
-                st.info(f"**[{row['카테고리']}] {row['내용']}** \n({row['작성자']} | {row['날짜']})")
+                st.info(f"**[{row['entry.1933165763']}] {row['entry.1127160445']}** \n({row['entry.2016517978']} | {row['entry.1748127579']})")
 except:
     st.write("아직 등록된 메모가 없습니다.")
+
